@@ -13,12 +13,11 @@ public class Deck : MonoBehaviour
     public Text probMessage;
 
     public int[] values = new int[52];
-    int cardIndex = 0;    
+    int cardIndex = 0;  
        
     private void Awake()
     {    
-        InitCardValues();        
-
+        InitCardValues();
     }
 
     private void Start()
@@ -29,11 +28,12 @@ public class Deck : MonoBehaviour
 
     private void InitCardValues()
     {
-        /*TODO:
-         * Asignar un valor a cada una de las 52 cartas del atributo "values".
-         * En principio, la posición de cada valor se deberá corresponder con la posición de faces. 
-         * Por ejemplo, si en faces[1] hay un 2 de corazones, en values[1] debería haber un 2.
-         */
+        for (int i = 0; i < 13; ++i) 
+        {
+            if (i > 9) { values[i] = 10; }
+            else { values[i] = i + 1; }
+            if (i == 12) { i = 0; }
+        }
     }
 
     private void ShuffleCards()
@@ -42,7 +42,7 @@ public class Deck : MonoBehaviour
          * Barajar las cartas aleatoriamente.
          * El método Random.Range(0,n), devuelve un valor entre 0 y n-1
          * Si lo necesitas, puedes definir nuevos arrays.
-         */       
+         */
     }
 
     void StartGame()
@@ -106,6 +106,7 @@ public class Deck : MonoBehaviour
         /*TODO: 
          * Si estamos en la mano inicial, debemos voltear la primera carta del dealer.
          */
+        
 
         /*TODO:
          * Repartimos cartas al dealer si tiene 16 puntos o menos
@@ -126,5 +127,4 @@ public class Deck : MonoBehaviour
         ShuffleCards();
         StartGame();
     }
-    
 }
