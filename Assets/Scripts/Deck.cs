@@ -14,6 +14,7 @@ public class Deck : MonoBehaviour
 
     public int[] values = new int[52];
     int cardIndex = 0;  
+    public const int Blackjack = 21;
        
     private void Awake()
     {    
@@ -71,14 +72,24 @@ public class Deck : MonoBehaviour
         {
             PushPlayer();
             PushDealer();
-
-            CalculateProbabilities();
         }
+        
+        int playerPoints = values[0] + values[2];
+        int dealerPoints = values[1] + values[3];
+
+        if (playerPoints == Blackjack)
+        {
+            if (dealerPoints == Blackjack) { EndGame(1); }  // Draw
+            else { EndGame(2); }                            // Player wins
+        }
+        else if (dealerPoints == Blackjack) { EndGame(0); }
+
+        CalculateProbabilities();
     }
 
     private void CalculateProbabilities()
     {
-        probMessage.text = ProbabilityDealerHigher() + " | " + 
+        probMessage.text = ProbabilityDealerHigher() + " % | " + 
             ProbabilityPlayerInBetween() + " | " +
             ProbabibilityPlayerOver();
     }
@@ -86,7 +97,28 @@ public class Deck : MonoBehaviour
     // Teniendo la carta oculta, probabilidad de que el dealer tenga más puntuación que el jugador
     private float ProbabilityDealerHigher()
     {
-        return 0.0f;
+        int playerPoints = values[0] + values[2];
+        int dealerPoints = values[3];
+        float favorableCases = 0;
+
+        if ((dealerPoints + values[1]) > playerPoints || 
+            (values[1] == 11 && (dealerPoints + 1) > playerPoints)) 
+        { 
+            favorableCases++; 
+        }
+
+        // Se realiza un recorrido por todos los valores de las cartas que están por salir y se
+        // cuentas las cartas favorables para que el valor del dealer sea mayor que el valor del jugador
+        for (int i = cardIndex; i < values.Length - 1; i++)
+        {
+            if ((dealerPoints + values[i]) > playerPoints) favorableCases++;
+
+            // Si el valor del dealer es superior a 10, los ases contarán 1 en vez de 11 y se
+            // añadirán a cartas favorables si lo son.
+            if (dealerPoints > 10 && (dealerPoints + values[i]) > playerPoints) favorableCases++;
+        }
+
+        return Mathf.Floor(favorableCases / (52 - cardIndex)  * 100);
     }
 
     //  Probabilidad de que el jugador obtenga entre un 17 y un 21 si pide una carta
@@ -124,12 +156,12 @@ public class Deck : MonoBehaviour
         int playerPoints = player.GetComponent<CardHand>().points;
         int dealerPoints = dealer.GetComponent<CardHand>().points;
     
-        if (playerPoints > 21) { EndGame(0); }
-        else if (playerPoints == 21)
+        if (playerPoints > Blackjack) { EndGame(0); }
+        else if (playerPoints == Blackjack)
         {
-            if (dealerPoints == 21) 
+            if (dealerPoints == Blackjack) 
             {
-                EndGame(01);
+                EndGame(1);
                 return;
             }
 
@@ -144,11 +176,18 @@ public class Deck : MonoBehaviour
     {
         FlipDealerCard();
 
-        /*TODO:
-         * Repartimos cartas al dealer si tiene 16 puntos o menos
-         * El dealer se planta al obtener 17 puntos o más
-         * Mostramos el mensaje del que ha ganado
-         */
+        int playerPoints = player.GetComponent<CardHand>().points;
+        int dealerPoints = dealer.GetComponent<CardHand>().points;
+
+        while (dealerPoints < 17)
+        {
+            PushDealer();
+            dealerPoints = dealer.GetComponent<CardHand>().points;
+        }
+
+        if (dealerPoints > 21 || playerPoints > dealerPoints) { EndGame(2); }
+        else if (playerPoints < dealerPoints) { EndGame(0); }
+        else { EndGame(1); }
     }
     
     public void FlipDealerCard()
@@ -166,16 +205,16 @@ public class Deck : MonoBehaviour
 
         switch (exitCode)
         {
-            case '0':
+            case 0:
                 finalMessage.text = "You lose!";
                 break;
-            case '1':
+            case 1:
                 finalMessage.text = "Draw!";
                 break;
-            case '2':
+            case 2:
                 finalMessage.text = "You win!";
                 break;
-            case '3':
+            case 3:
                 finalMessage.text = "Blackjack!";
                 break;
             default:
