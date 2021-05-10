@@ -46,14 +46,23 @@ public class Deck : MonoBehaviour
         }
     }
 
+    // Fisher–Yates shuffle algorithm
     private void ShuffleCards()
     {
-        /*TODO:
-         * Barajar las cartas aleatoriamente.
-         * El método Random.Range(0,n), devuelve un valor entre 0 y n-1
-         * Si lo necesitas, puedes definir nuevos arrays.
-         */
-        
+        for (int i = 0; i < values.Length; ++i)
+        {
+            int randomCard = Random.Range(i, values.Length);
+
+            // Swap sprites
+            Sprite currCard = faces[i];     
+            faces[i] = faces[randomCard];
+            faces[randomCard] = currCard;
+
+            // Swap card values
+            int currValue = values[i];
+            values[i] = values[randomCard];
+            values[randomCard] = currValue;
+        }
     }
 
     void StartGame()
