@@ -84,8 +84,5 @@ public class CardHand : MonoBehaviour
         }
 
         points = val;
-       
     }
-     
-
 }

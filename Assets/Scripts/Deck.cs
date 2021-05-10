@@ -28,11 +28,21 @@ public class Deck : MonoBehaviour
 
     private void InitCardValues()
     {
-        for (int i = 0; i < 13; ++i) 
+        int count = 0;
+        for (int i = 0; i < values.Length; ++i) 
         {
-            if (i > 9) { values[i] = 10; }
-            else { values[i] = i + 1; }
-            if (i == 12) { i = 0; }
+            if (count > 9) 
+            { 
+                values[i] = 10; 
+                values[++i] = 10;
+                values[++i] = 10;
+                count = 0;
+            }
+            else 
+            { 
+                values[i] = count + 1; 
+                count++;
+            }            
         }
     }
 
@@ -43,6 +53,7 @@ public class Deck : MonoBehaviour
          * El método Random.Range(0,n), devuelve un valor entre 0 y n-1
          * Si lo necesitas, puedes definir nuevos arrays.
          */
+        
     }
 
     void StartGame()
