@@ -71,9 +71,8 @@ public class Deck : MonoBehaviour
         {
             PushPlayer();
             PushDealer();
-            /*TODO:
-             * Si alguno de los dos obtiene Blackjack, termina el juego y mostramos mensaje
-             */
+
+            CalculateProbabilities();
         }
     }
 
@@ -87,19 +86,19 @@ public class Deck : MonoBehaviour
     // Teniendo la carta oculta, probabilidad de que el dealer tenga más puntuación que el jugador
     private float ProbabilityDealerHigher()
     {
-
+        return 0.0f;
     }
 
     //  Probabilidad de que el jugador obtenga entre un 17 y un 21 si pide una carta
     private float ProbabilityPlayerInBetween()
     {
-
+        return 0.0f;
     }
 
     // Probabilidad de que el jugador obtenga más de 21 si pide una carta
     private float ProbabibilityPlayerOver()
     {
-
+        return 0.0f;
     }
     
     void PushDealer()
@@ -110,39 +109,78 @@ public class Deck : MonoBehaviour
 
     void PushPlayer()
     {
-        player.GetComponent<CardHand>().Push(faces[cardIndex], values[cardIndex]/*,cardCopy*/);
+        player.GetComponent<CardHand>().Push(faces[cardIndex], values[cardIndex]);
         cardIndex++;
         CalculateProbabilities();
     }       
 
     public void Hit()
     {
-        /*TODO: 
-         * Si estamos en la mano inicial, debemos voltear la primera carta del dealer.
-         */
+        FlipDealerCard();
         
-        //Repartimos carta al jugador
+        // Deal a card to the player
         PushPlayer();
 
-        /*TODO:
-         * Comprobamos si el jugador ya ha perdido y mostramos mensaje
-         */      
+        int playerPoints = player.GetComponent<CardHand>().points;
+        int dealerPoints = dealer.GetComponent<CardHand>().points;
+    
+        if (playerPoints > 21) { EndGame(0); }
+        else if (playerPoints == 21)
+        {
+            if (dealerPoints == 21) 
+            {
+                EndGame(01);
+                return;
+            }
 
+            EndGame(2);
+        }
+ 
+        // Update probabilities
+        CalculateProbabilities();
     }
 
     public void Stand()
     {
-        /*TODO: 
-         * Si estamos en la mano inicial, debemos voltear la primera carta del dealer.
-         */
-        
+        FlipDealerCard();
 
         /*TODO:
          * Repartimos cartas al dealer si tiene 16 puntos o menos
          * El dealer se planta al obtener 17 puntos o más
          * Mostramos el mensaje del que ha ganado
-         */                
-         
+         */
+    }
+    
+    public void FlipDealerCard()
+    {
+        if (player.GetComponent<CardHand>().cards.Count == 2) 
+        {
+            dealer.GetComponent<CardHand>().cards[0].GetComponent<CardModel>().ToggleFace(true);
+        }
+    }
+
+    private void EndGame(int exitCode)
+    {
+        hitButton.interactable = false;
+        stickButton.interactable = false;
+
+        switch (exitCode)
+        {
+            case '0':
+                finalMessage.text = "You lose!";
+                break;
+            case '1':
+                finalMessage.text = "Draw!";
+                break;
+            case '2':
+                finalMessage.text = "You win!";
+                break;
+            case '3':
+                finalMessage.text = "Blackjack!";
+                break;
+            default:
+                break;
+        }
     }
 
     public void PlayAgain()
