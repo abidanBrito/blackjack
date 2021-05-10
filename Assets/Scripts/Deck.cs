@@ -79,28 +79,37 @@ public class Deck : MonoBehaviour
 
     private void CalculateProbabilities()
     {
-        /*TODO:
-         * Calcular las probabilidades de:
-         * - Teniendo la carta oculta, probabilidad de que el dealer tenga más puntuación que el jugador
-         * - Probabilidad de que el jugador obtenga entre un 17 y un 21 si pide una carta
-         * - Probabilidad de que el jugador obtenga más de 21 si pide una carta          
-         */
+        probMessage.text = ProbabilityDealerHigher() + " | " + 
+            ProbabilityPlayerInBetween() + " | " +
+            ProbabibilityPlayerOver();
     }
 
+    // Teniendo la carta oculta, probabilidad de que el dealer tenga más puntuación que el jugador
+    private float ProbabilityDealerHigher()
+    {
+
+    }
+
+    //  Probabilidad de que el jugador obtenga entre un 17 y un 21 si pide una carta
+    private float ProbabilityPlayerInBetween()
+    {
+
+    }
+
+    // Probabilidad de que el jugador obtenga más de 21 si pide una carta
+    private float ProbabibilityPlayerOver()
+    {
+
+    }
+    
     void PushDealer()
     {
-        /*TODO:
-         * Dependiendo de cómo se implemente ShuffleCards, es posible que haya que cambiar el índice.
-         */
         dealer.GetComponent<CardHand>().Push(faces[cardIndex],values[cardIndex]);
         cardIndex++;        
     }
 
     void PushPlayer()
     {
-        /*TODO:
-         * Dependiendo de cómo se implemente ShuffleCards, es posible que haya que cambiar el índice.
-         */
         player.GetComponent<CardHand>().Push(faces[cardIndex], values[cardIndex]/*,cardCopy*/);
         cardIndex++;
         CalculateProbabilities();
