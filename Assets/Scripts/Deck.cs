@@ -41,6 +41,7 @@ public class Deck : MonoBehaviour
         int count = 0;
         for (int i = 0; i < values.Length; ++i) 
         {
+            // Cards 10, 11, 12
             if (count > 9) 
             { 
                 values[i] = 10; 
@@ -71,7 +72,6 @@ public class Deck : MonoBehaviour
     {
         for (int i = 0; i < values.Length; ++i)
         {
-            // Random index
             int rndIndex = Random.Range(i, values.Length);
 
             // Swap sprites
@@ -123,17 +123,15 @@ public class Deck : MonoBehaviour
         int playerPoints = values[0] + values[2];
         int dealerPoints = values[1] + values[3];
 
-        if (checkBlackJack(player))
+        if (CheckBlackJack(player))
         {
-            if (checkBlackJack(dealer)) { EndGame(1); }     // Draw
+            if (CheckBlackJack(dealer)) { EndGame(1); }     // Draw
             else { EndGame(2); }                            // Player wins
         }
-        else if (checkBlackJack(dealer)) { EndGame(0); }
-
-        CalculateProbabilities();
+        else if (CheckBlackJack(dealer)) { EndGame(0); }
     }
 
-    private bool checkBlackJack(GameObject whoever)
+    private bool CheckBlackJack(GameObject whoever)
     {
         return whoever.GetComponent<CardHand>().points == 21;
     }
@@ -194,19 +192,20 @@ public class Deck : MonoBehaviour
     {
         player.GetComponent<CardHand>().Push(faces[cardIndex], values[cardIndex]);
         cardIndex++;
+
         CalculateProbabilities();
     }       
 
     public void Hit()
     {
         FlipDealerCard();
-        
-        // Deal a card to the player
         PushPlayer();
 
+        // Get both the player and the dealer points
         int playerPoints = player.GetComponent<CardHand>().points;
         int dealerPoints = dealer.GetComponent<CardHand>().points;
-    
+
+        // Check for Blackjack and the win
         if (playerPoints > Constants.Blackjack) { EndGame(0); }
         else if (playerPoints == Constants.Blackjack)
         {
@@ -218,9 +217,6 @@ public class Deck : MonoBehaviour
 
             EndGame(2);
         }
- 
-        // Update probabilities
-        CalculateProbabilities();
     }
 
     public void Stand()
