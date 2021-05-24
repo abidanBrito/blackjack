@@ -95,7 +95,8 @@ public class Deck : MonoBehaviour
     {
         // Randomized indices array -> [0, values.Length - 1]
         System.Random rnd = new System.Random();
-        int[] index = Enumerable.Range(0, values.Length).ToArray().OrderBy(_ => rnd.Next()).ToArray();
+        int[] index = Enumerable.Range(0, values.Length).ToArray();
+        index.OrderBy(_ => rnd.Next()).ToArray();
         
         // Temporary arrays for shuffling
         int[] tmpValues = new int[Constants.DeckCards];
@@ -132,10 +133,11 @@ public class Deck : MonoBehaviour
         else if (CheckBlackJack(dealer)) { EndHand(WinCode.DealerWins); }  // Dealer wins
     }
 
-    private bool CheckBlackJack(GameObject whoever) => whoever.GetComponent<CardHand>()?.points == 21;
+    private bool CheckBlackJack(GameObject whoever) =>
+        whoever.GetComponent<CardHand>()?.points == 21;
 
     private int GetPlayerPoints() => player.GetComponent<CardHand>().points;
-    
+
     private int GetDealerPoints() => dealer.GetComponent<CardHand>().points;
 
     private void CalculateProbabilities()
@@ -158,14 +160,9 @@ public class Deck : MonoBehaviour
             favorableCases++;
         }
 
-        // Se realiza un recorrido por todos los valores de las cartas que están por salir y se
-        // cuentas las cartas favorables para que el valor del dealer sea mayor que el valor del jugador
         for (int i = cardIndex; i < values.Length - 1; ++i)
         {
             if ((dealerPoints + values[i]) > playerPoints) favorableCases++;
-
-            // Si el valor del dealer es superior a 10, los ases contarán 1 en vez de 11 y se
-            // añadirán a cartas favorables si lo son.
             if (dealerPoints > 10 && (dealerPoints + values[i]) > playerPoints) favorableCases++;
         }
 
@@ -181,32 +178,7 @@ public class Deck : MonoBehaviour
     // Probabilidad de que el jugador obtenga más de 21 si pide una carta
     private float ProbabibilityPlayerOver()
     {
-        int playerPoints = GetPlayerPoints();
-        float posibleCases = values.Length - cardIndex + 1.0f; // casos posibles, cartas restantes mas 1 por cada As
-        int favorableCases = 0;
-        int sum = 0;
 
-        // casos favorables todas aquellas sumas que sobre pasen el 21
-        for (int i = cardIndex; i < values.Length; ++i)
-        {
-            sum = playerPoints + values[i];
-            if (sum > 21)
-            {
-                favorableCases++;
-            }
-
-            // si el valor 1 contemplar el 11
-            if (values[i] == 1)
-            {
-                sum = playerPoints + 11;
-                if (sum > 21)
-                {
-                    favorableCases++;
-                }
-            }
-        }
-
-        return (favorableCases / posibleCases) * 100;
     }
 
     private void PushDealer()
@@ -225,24 +197,14 @@ public class Deck : MonoBehaviour
 
     public void Hit()
     {
-        FlipDealerCard();
         PushPlayer();
+        FlipDealerCard();
 
         int playerPoints = GetPlayerPoints();
-        int dealerPoints = GetDealerPoints();
 
         // Check for Blackjack and the win
         if (playerPoints > Constants.Blackjack) { EndHand(WinCode.DealerWins); }
-        else if (playerPoints == Constants.Blackjack)
-        {
-            if (dealerPoints == Constants.Blackjack) 
-            {
-                EndHand(WinCode.Draw);
-                return;
-            }
-
-            EndHand(WinCode.PlayerWins);
-        }
+        else if (playerPoints == Constants.Blackjack) { EndHand(WinCode.PlayerWins); }
     }
 
     public void Stand()
@@ -256,18 +218,15 @@ public class Deck : MonoBehaviour
             dealerPoints = dealer.GetComponent<CardHand>().points;
         }
 
-        if (dealerPoints > Constants.Blackjack || playerPoints > dealerPoints) { EndHand(WinCode.Draw); }
-        else if (playerPoints < dealerPoints) { EndHand(WinCode.DealerWins); }
-        else { EndHand(WinCode.PlayerWins); }
-    }
-    
-    public void FlipDealerCard()
-    {
-        if (player.GetComponent<CardHand>().cards.Count == 2) 
-        {
-            dealer.GetComponent<CardHand>().cards[0].GetComponent<CardModel>().ToggleFace(true);
+        if (dealerPoints > Constants.Blackjack || dealerPoints < playerPoints) 
+        { 
+            EndHand(WinCode.PlayerWins); 
         }
+        playerPoints < dealerPoints ? EndHand(WinCode.DealerWins) : EndHand(WinCode.Draw);
     }
+
+    public void FlipDealerCard() => dealer.GetComponent<CardHand>().cards[0].
+                                    GetComponent<CardModel>().ToggleFace(true);
 
     private void EndHand(WinCode code)
     {
