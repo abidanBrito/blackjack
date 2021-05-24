@@ -153,7 +153,7 @@ public class Deck : MonoBehaviour
         
         probMessage.text = ProbabilityDealerHigher(possibleCases) + " % | " + 
             ProbabilityPlayerInBetween(possibleCases) + " % | " + 
-            ProbabibilityPlayerOver(possibleCases) + " %";
+            ProbabibilityPlayerOver() + " %";
     }
 
     // Having the card hidden, probability that the dealer has a higher point count than the player
@@ -201,21 +201,45 @@ public class Deck : MonoBehaviour
                 }
             }
         }
-        
+
         return System.Math.Round((favorableCases / possibleCases) * 100, 2);
     }
 
     // Probability that the player gets 17 - 21 points if he/she asks for a card
     private double ProbabilityPlayerInBetween(float possibleCases)
     {
-        return 0.0f;
+        int playerPoints = GetDealerPoints();
+        float favorableCases = 0.0f;
+        int sum = 0;
+
+        for (int i = cardIndex; i < values.Length; ++i)
+        {
+            sum = playerPoints + values[i];
+            if (sum >= Constants.DealerStand && sum <= Constants.Blackjack)
+            {
+                favorableCases++;
+            }
+
+            // Contemplate an ace as 11 points
+            if (values[i] == 1)
+            {
+                sum = playerPoints + Constants.SoftAce;
+                if (sum >= Constants.DealerStand && sum <= Constants.Blackjack)
+                {
+                    favorableCases++;
+                }
+            }
+        }
+    
+        return System.Math.Round((favorableCases / possibleCases) * 100, 2);
     }
 
     // Probability that the player goes over 21 points if he/she asks for a card
-    private double ProbabibilityPlayerOver(float possibleCases)
+    private double ProbabibilityPlayerOver()
     {
+        float possibleCases = values.Length - cardIndex + 1.0f;
         int playerPoints = GetDealerPoints();
-        int favorableCases = 0;
+        float favorableCases = 0.0f;
         int sum = 0;
 
         // casos favorables todas aquellas sums que sobre pasen el 21
