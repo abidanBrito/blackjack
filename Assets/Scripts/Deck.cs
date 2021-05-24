@@ -10,6 +10,7 @@ internal static class Constants
     public const int DeckCards = 52;
     public const int Blackjack = 21;
     public const int DealerStand = 17;
+    public const int SoftAce = 11;
 }
 
 internal enum WinCode { DealerWins, PlayerWins, Draw }
@@ -134,7 +135,7 @@ public class Deck : MonoBehaviour
     }
 
     private bool CheckBlackJack(GameObject whoever) =>
-        whoever.GetComponent<CardHand>()?.points == 21;
+        whoever.GetComponent<CardHand>()?.points == Constants.Blackjack;
 
     private int GetPlayerPoints() => player.GetComponent<CardHand>().points;
 
@@ -142,43 +143,95 @@ public class Deck : MonoBehaviour
 
     private void CalculateProbabilities()
     {
-        probMessage.text = ProbabilityDealerHigher() + " % | " + 
-            ProbabilityPlayerInBetween() + " % | " +
-            ProbabibilityPlayerOver() + " %";
+        float possibleCases = values.Length - cardIndex + 1.0f;
+
+        // Every remaining ace has two possible values (different sums)
+        for (int i = cardIndex; i < values.Length; ++i)
+        {
+            if (values[i] == 1) { possibleCases++; }
+        }
+        
+        probMessage.text = ProbabilityDealerHigher(possibleCases) + " % | " + 
+            ProbabilityPlayerInBetween(possibleCases) + " % | " + 
+            ProbabibilityPlayerOver(possibleCases) + " %";
     }
 
-    // Teniendo la carta oculta, probabilidad de que el dealer tenga más puntuación que el jugador
-    private float ProbabilityDealerHigher()
+    // Having the card hidden, probability that the dealer has a higher point count than the player
+    private double ProbabilityDealerHigher(float possibleCases)
     {
-        int playerPoints = GetPlayerPoints();
-        int dealerPoints = values[3];
-        float favorableCases = 0;
+        CardHand dealerHand = dealer.GetComponent<CardHand>();
+        List<CardModel> dealerCards = dealerHand.cards
+            .Select(card => card.GetComponent<CardModel>()).ToList();
 
-        if ((dealerPoints + values[1]) > playerPoints ||
-            (values[1] == 11 && (dealerPoints + 1) > playerPoints))
+        int favorableCases = 0;
+        if (dealerCards.Count > 1) 
         {
-            favorableCases++;
-        }
+            int dealerPointsVisible = dealerCards[1].value;
 
-        for (int i = cardIndex; i < values.Length - 1; ++i)
-        {
-            if ((dealerPoints + values[i]) > playerPoints) favorableCases++;
-            if (dealerPoints > 10 && (dealerPoints + values[i]) > playerPoints) favorableCases++;
-        }
+            int playerPoints = GetPlayerPoints();
+            int sum = 0;
 
-        return Mathf.Floor(favorableCases / (Constants.DeckCards - cardIndex)  * 100);
+            for (int i = cardIndex; i < values.Length; ++i)
+            {
+                // Default case
+                sum = dealerPointsVisible + values[i];
+                if (sum < Constants.Blackjack && sum > playerPoints)
+                {
+                    favorableCases++;
+                }
+
+                // Hidden ace as 11 points
+                if (values[i] == 1)
+                {
+                    sum = dealerPointsVisible + Constants.SoftAce;
+                    if (sum < Constants.Blackjack && sum > playerPoints)
+                    {
+                        favorableCases++;
+                    }
+                }
+
+                // Visible ace as 11 points
+                if (dealerPointsVisible == 1)
+                {
+                    sum = Constants.SoftAce + values[i];
+                    if (sum < Constants.Blackjack && sum > playerPoints)
+                    {
+                        favorableCases++;
+                    }
+                }
+            }
+        }
+        
+        return System.Math.Round((favorableCases / possibleCases) * 100, 2);
     }
 
-    //  Probabilidad de que el jugador obtenga entre un 17 y un 21 si pide una carta
-    private float ProbabilityPlayerInBetween()
+    // Probability that the player gets 17 - 21 points if he/she asks for a card
+    private double ProbabilityPlayerInBetween(float possibleCases)
     {
         return 0.0f;
     }
 
-    // Probabilidad de que el jugador obtenga más de 21 si pide una carta
-    private float ProbabibilityPlayerOver()
+    // Probability that the player goes over 21 points if he/she asks for a card
+    private double ProbabibilityPlayerOver(float possibleCases)
     {
+        int playerPoints = GetDealerPoints();
+        int favorableCases = 0;
+        int sum = 0;
 
+        // casos favorables todas aquellas sums que sobre pasen el 21
+        for (int i = cardIndex; i < values.Length; ++i)
+        {
+            sum = playerPoints + values[i];
+            if (sum > Constants.Blackjack) { favorableCases++; }
+
+            if (values[i] == 1)
+            {
+                sum = playerPoints + 11;
+                if (sum > Constants.Blackjack) { favorableCases++; }
+            }
+        }
+
+        return System.Math.Round((favorableCases / possibleCases) * 100, 2);
     }
 
     private void PushDealer()
@@ -222,7 +275,8 @@ public class Deck : MonoBehaviour
         { 
             EndHand(WinCode.PlayerWins); 
         }
-        playerPoints < dealerPoints ? EndHand(WinCode.DealerWins) : EndHand(WinCode.Draw);
+        else if (playerPoints < dealerPoints) { EndHand(WinCode.DealerWins); }
+        else { EndHand(WinCode.Draw); }
     }
 
     public void FlipDealerCard() => dealer.GetComponent<CardHand>().cards[0].
