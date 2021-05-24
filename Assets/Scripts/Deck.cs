@@ -126,16 +126,33 @@ public class Deck : MonoBehaviour
             PushDealer();
         }
         
-        if (CheckBlackJack(player))
+        if (Blackjack(player, true))
         {
-            if (CheckBlackJack(dealer)) { EndHand(WinCode.Draw); }         // Draw
-            else { EndHand(WinCode.PlayerWins); }                          // Player wins
+            if (Blackjack(dealer, false)) { EndHand(WinCode.Draw); }        // Draw
+            else { EndHand(WinCode.PlayerWins); }                           // Player wins
         }
-        else if (CheckBlackJack(dealer)) { EndHand(WinCode.DealerWins); }  // Dealer wins
+        else if (Blackjack(dealer, false)) { EndHand(WinCode.DealerWins); }   // Dealer wins
     }
 
-    private bool CheckBlackJack(GameObject whoever) =>
-        whoever.GetComponent<CardHand>()?.points == Constants.Blackjack;
+    private bool Blackjack(GameObject whoever, bool isPlayer)
+    {
+        int handPoints = isPlayer ? GetPlayerPoints() : GetDealerPoints();
+        if (handPoints == Constants.Blackjack) { return true; }
+        else
+        {
+            CardHand hand = whoever.GetComponent<CardHand>();
+            foreach (GameObject card in hand.cards)
+            {
+                // Contemplate soft aces that make make a blackjack
+                if (card.GetComponent<CardModel>().value == 1)
+                {
+                    if ((handPoints - 1 + Constants.SoftAce) == 1) { return true; }
+                }
+            }
+        }
+
+        return false;
+    }
 
     private int GetPlayerPoints() => player.GetComponent<CardHand>().points;
 
@@ -209,7 +226,7 @@ public class Deck : MonoBehaviour
     private double ProbabilityPlayerInBetween(float possibleCases)
     {
         int playerPoints = GetDealerPoints();
-        float favorableCases = 0.0f;
+        int favorableCases = 0;
         int sum = 0;
 
         for (int i = cardIndex; i < values.Length; ++i)
@@ -238,21 +255,14 @@ public class Deck : MonoBehaviour
     private double ProbabibilityPlayerOver()
     {
         float possibleCases = values.Length - cardIndex + 1.0f;
-        int playerPoints = GetDealerPoints();
-        float favorableCases = 0.0f;
+        int playerPoints = GetPlayerPoints();
+        int favorableCases = 0;
         int sum = 0;
 
-        // casos favorables todas aquellas sums que sobre pasen el 21
         for (int i = cardIndex; i < values.Length; ++i)
         {
             sum = playerPoints + values[i];
             if (sum > Constants.Blackjack) { favorableCases++; }
-
-            if (values[i] == 1)
-            {
-                sum = playerPoints + 11;
-                if (sum > Constants.Blackjack) { favorableCases++; }
-            }
         }
 
         return System.Math.Round((favorableCases / possibleCases) * 100, 2);
@@ -276,12 +286,10 @@ public class Deck : MonoBehaviour
     {
         PushPlayer();
         FlipDealerCard();
-
-        int playerPoints = GetPlayerPoints();
-
+        
         // Check for Blackjack and the win
-        if (playerPoints > Constants.Blackjack) { EndHand(WinCode.DealerWins); }
-        else if (playerPoints == Constants.Blackjack) { EndHand(WinCode.PlayerWins); }
+        if (Blackjack(player, true)) { EndHand(WinCode.PlayerWins); }
+        else if (GetPlayerPoints() > Constants.Blackjack) { EndHand(WinCode.DealerWins); }
     }
 
     public void Stand()
