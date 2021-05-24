@@ -1,4 +1,4 @@
-﻿#undef  ARRAY_SHUFFLE
+﻿#undef ARRAY_SHUFFLE
 
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,8 +7,12 @@ using System.Linq;
 
 internal static class Constants
 {
+    public const int DeckCards = 52;
     public const int Blackjack = 21;
+    public const int DealerStand = 17;
 }
+
+internal enum WinCode { DealerWins, PlayerWins, Draw }
 
 public class Deck : MonoBehaviour
 {
@@ -21,7 +25,7 @@ public class Deck : MonoBehaviour
     public Text finalMessage;
     public Text probMessage;
 
-    public int[] values = new int[52];
+    public int[] values = new int[Constants.DeckCards];
     int cardIndex = 0;  
        
     private void Awake()
@@ -41,23 +45,23 @@ public class Deck : MonoBehaviour
         int count = 0;
         for (int i = 0; i < values.Length; ++i) 
         {
-            // Cards 10, 11, 12
-            if (count > 9) 
-            { 
+            // This only affects the J, Q, K cards
+            if (count > 9)
+            {
                 values[i] = 10; 
                 values[++i] = 10;
                 values[++i] = 10;
                 count = 0;
             }
-            else 
-            { 
+            else
+            {
                 values[i] = count + 1; 
                 count++;
-            }            
+            }
         }
     }
 
-    // Swap algorithms by un/definining `ARRAY_SHUFFLE` at the top.
+    // Swap algorithms by un/definining `ARRAY_SHUFFLE` at the top
     private void ShuffleCards()
     {
         #if (ARRAY_SHUFFLE)
@@ -75,7 +79,7 @@ public class Deck : MonoBehaviour
             int rndIndex = Random.Range(i, values.Length);
 
             // Swap sprites
-            Sprite currCard = faces[i];     
+            Sprite currCard = faces[i];
             faces[i] = faces[rndIndex];
             faces[rndIndex] = currCard;
 
@@ -86,26 +90,26 @@ public class Deck : MonoBehaviour
         }
     }
 
-    // 2 * O(n) = O(n) -> Linear time complexity
-    private void ArrayShuffle() 
+    // O(n * log n) -> Linearithmic time complexity
+    private void ArrayShuffle()
     {
-        // Randomized indices array -> [0, 52]
+        // Randomized indices array -> [0, values.Length - 1]
         System.Random rnd = new System.Random();
-        int[] index = Enumerable.Range(0, values.Length).ToArray().OrderBy(x => rnd.Next()).ToArray();
+        int[] index = Enumerable.Range(0, values.Length).ToArray().OrderBy(_ => rnd.Next()).ToArray();
         
         // Temporary arrays for shuffling
-        int[] tmpValues = new int[52];
-        Sprite[] tmpFaces = new Sprite[52];
+        int[] tmpValues = new int[Constants.DeckCards];
+        Sprite[] tmpFaces = new Sprite[Constants.DeckCards];
 
         // Copy the elements by means of the randomized indices
-        for (int i = 0; i < 52; ++i)
+        for (int i = 0; i < Constants.DeckCards; ++i)
         {
             tmpValues[index[i]] = values[i];
             tmpFaces[index[i]] = faces[i];
         }
 
         // Update the resulting arrays
-        for (int i = 0; i < 52; ++i)
+        for (int i = 0; i < Constants.DeckCards; ++i)
         {
             values[i] = tmpValues[i];
             faces[i] = tmpFaces[i];
@@ -114,51 +118,49 @@ public class Deck : MonoBehaviour
 
     private void StartGame()
     {
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 2; ++i)
         {
             PushPlayer();
             PushDealer();
         }
         
-        int playerPoints = values[0] + values[2];
-        int dealerPoints = values[1] + values[3];
-
         if (CheckBlackJack(player))
         {
-            if (CheckBlackJack(dealer)) { EndGame(1); }     // Draw
-            else { EndGame(2); }                            // Player wins
+            if (CheckBlackJack(dealer)) { EndHand(WinCode.Draw); }         // Draw
+            else { EndHand(WinCode.PlayerWins); }                          // Player wins
         }
-        else if (CheckBlackJack(dealer)) { EndGame(0); }
+        else if (CheckBlackJack(dealer)) { EndHand(WinCode.DealerWins); }  // Dealer wins
     }
 
-    private bool CheckBlackJack(GameObject whoever)
-    {
-        return whoever.GetComponent<CardHand>().points == 21;
-    }
+    private bool CheckBlackJack(GameObject whoever) => whoever.GetComponent<CardHand>()?.points == 21;
+
+    private int GetPlayerPoints() => player.GetComponent<CardHand>().points;
+    
+    private int GetDealerPoints() => dealer.GetComponent<CardHand>().points;
 
     private void CalculateProbabilities()
     {
         probMessage.text = ProbabilityDealerHigher() + " % | " + 
-            ProbabilityPlayerInBetween() + " | " +
-            ProbabibilityPlayerOver();
+            ProbabilityPlayerInBetween() + " % | " +
+            ProbabibilityPlayerOver() + " %";
     }
 
     // Teniendo la carta oculta, probabilidad de que el dealer tenga más puntuación que el jugador
     private float ProbabilityDealerHigher()
     {
-        int playerPoints = values[0] + values[2];
+        int playerPoints = GetPlayerPoints();
         int dealerPoints = values[3];
         float favorableCases = 0;
 
-        if ((dealerPoints + values[1]) > playerPoints || 
-            (values[1] == 11 && (dealerPoints + 1) > playerPoints)) 
-        { 
-            favorableCases++; 
+        if ((dealerPoints + values[1]) > playerPoints ||
+            (values[1] == 11 && (dealerPoints + 1) > playerPoints))
+        {
+            favorableCases++;
         }
 
         // Se realiza un recorrido por todos los valores de las cartas que están por salir y se
         // cuentas las cartas favorables para que el valor del dealer sea mayor que el valor del jugador
-        for (int i = cardIndex; i < values.Length - 1; i++)
+        for (int i = cardIndex; i < values.Length - 1; ++i)
         {
             if ((dealerPoints + values[i]) > playerPoints) favorableCases++;
 
@@ -167,7 +169,7 @@ public class Deck : MonoBehaviour
             if (dealerPoints > 10 && (dealerPoints + values[i]) > playerPoints) favorableCases++;
         }
 
-        return Mathf.Floor(favorableCases / (52 - cardIndex)  * 100);
+        return Mathf.Floor(favorableCases / (Constants.DeckCards - cardIndex)  * 100);
     }
 
     //  Probabilidad de que el jugador obtenga entre un 17 y un 21 si pide una carta
@@ -179,13 +181,38 @@ public class Deck : MonoBehaviour
     // Probabilidad de que el jugador obtenga más de 21 si pide una carta
     private float ProbabibilityPlayerOver()
     {
-        return 0.0f;
+        int playerPoints = GetPlayerPoints();
+        float posibleCases = values.Length - cardIndex + 1.0f; // casos posibles, cartas restantes mas 1 por cada As
+        int favorableCases = 0;
+        int sum = 0;
+
+        // casos favorables todas aquellas sumas que sobre pasen el 21
+        for (int i = cardIndex; i < values.Length; ++i)
+        {
+            sum = playerPoints + values[i];
+            if (sum > 21)
+            {
+                favorableCases++;
+            }
+
+            // si el valor 1 contemplar el 11
+            if (values[i] == 1)
+            {
+                sum = playerPoints + 11;
+                if (sum > 21)
+                {
+                    favorableCases++;
+                }
+            }
+        }
+
+        return (favorableCases / posibleCases) * 100;
     }
-    
+
     private void PushDealer()
     {
-        dealer.GetComponent<CardHand>().Push(faces[cardIndex],values[cardIndex]);
-        cardIndex++;        
+        dealer.GetComponent<CardHand>().Push(faces[cardIndex], values[cardIndex]);
+        cardIndex++;
     }
 
     private void PushPlayer()
@@ -194,47 +221,44 @@ public class Deck : MonoBehaviour
         cardIndex++;
 
         CalculateProbabilities();
-    }       
+    }
 
     public void Hit()
     {
         FlipDealerCard();
         PushPlayer();
 
-        // Get both the player and the dealer points
-        int playerPoints = player.GetComponent<CardHand>().points;
-        int dealerPoints = dealer.GetComponent<CardHand>().points;
+        int playerPoints = GetPlayerPoints();
+        int dealerPoints = GetDealerPoints();
 
         // Check for Blackjack and the win
-        if (playerPoints > Constants.Blackjack) { EndGame(0); }
+        if (playerPoints > Constants.Blackjack) { EndHand(WinCode.DealerWins); }
         else if (playerPoints == Constants.Blackjack)
         {
             if (dealerPoints == Constants.Blackjack) 
             {
-                EndGame(1);
+                EndHand(WinCode.Draw);
                 return;
             }
 
-            EndGame(2);
+            EndHand(WinCode.PlayerWins);
         }
     }
 
     public void Stand()
     {
-        FlipDealerCard();
-
         int playerPoints = player.GetComponent<CardHand>().points;
         int dealerPoints = dealer.GetComponent<CardHand>().points;
 
-        while (dealerPoints < 17)
+        while (dealerPoints < Constants.DealerStand)
         {
             PushDealer();
             dealerPoints = dealer.GetComponent<CardHand>().points;
         }
 
-        if (dealerPoints > 21 || playerPoints > dealerPoints) { EndGame(2); }
-        else if (playerPoints < dealerPoints) { EndGame(0); }
-        else { EndGame(1); }
+        if (dealerPoints > Constants.Blackjack || playerPoints > dealerPoints) { EndHand(WinCode.Draw); }
+        else if (playerPoints < dealerPoints) { EndHand(WinCode.DealerWins); }
+        else { EndHand(WinCode.PlayerWins); }
     }
     
     public void FlipDealerCard()
@@ -245,23 +269,25 @@ public class Deck : MonoBehaviour
         }
     }
 
-    private void EndGame(int exitCode)
+    private void EndHand(WinCode code)
     {
         hitButton.interactable = false;
         stickButton.interactable = false;
+        FlipDealerCard();
 
-        switch (exitCode)
+        switch (code)
         {
-            case 0:
+            case WinCode.DealerWins:
                 finalMessage.text = "You lose!";
                 break;
-            case 1:
-                finalMessage.text = "Draw!";
-                break;
-            case 2:
+            case WinCode.PlayerWins:
                 finalMessage.text = "You win!";
                 break;
+            case WinCode.Draw:
+                finalMessage.text = "Draw!";
+                break;
             default:
+                Debug.Assert(false);    // Report invalid input
                 break;
         }
     }
