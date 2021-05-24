@@ -125,13 +125,13 @@ public class Deck : MonoBehaviour
             PushPlayer();
             PushDealer();
         }
-        
+
         if (Blackjack(player, true))
         {
             if (Blackjack(dealer, false)) { EndHand(WinCode.Draw); }        // Draw
             else { EndHand(WinCode.PlayerWins); }                           // Player wins
         }
-        else if (Blackjack(dealer, false)) { EndHand(WinCode.DealerWins); }   // Dealer wins
+        else if (Blackjack(dealer, false)) { EndHand(WinCode.DealerWins); } // Dealer wins
     }
 
     private bool Blackjack(GameObject whoever, bool isPlayer)
@@ -146,7 +146,10 @@ public class Deck : MonoBehaviour
                 // Contemplate soft aces that make make a blackjack
                 if (card.GetComponent<CardModel>().value == 1)
                 {
-                    if ((handPoints - 1 + Constants.SoftAce) == 1) { return true; }
+                    if ((handPoints - 1 + Constants.SoftAce) == Constants.Blackjack) 
+                    { 
+                        return true; 
+                    }
                 }
             }
         }
