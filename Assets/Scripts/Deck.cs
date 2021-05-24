@@ -2,6 +2,8 @@
 
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,6 +13,8 @@ internal static class Constants
     public const int Blackjack = 21;
     public const int DealerStand = 17;
     public const int SoftAce = 11;
+    public const uint InitialBalance = 1000;
+    public const uint BetIncrement = 10;
 }
 
 internal enum WinCode { DealerWins, PlayerWins, Draw }
@@ -20,11 +24,21 @@ public class Deck : MonoBehaviour
     public Sprite[] faces;
     public GameObject dealer;
     public GameObject player;
+
     public Button hitButton;
     public Button stickButton;
     public Button playAgainButton;
     public Text finalMessage;
     public Text probMessage;
+
+
+    // Bet
+    public Button raiseBetButton;
+    public Button lowerBetButton;
+    public Text balance;
+    public Text bet;
+    private uint _balance = Constants.InitialBalance;
+    private uint _bet;
 
     public int[] values = new int[Constants.DeckCards];
     int cardIndex = 0;  
@@ -120,6 +134,8 @@ public class Deck : MonoBehaviour
 
     private void StartGame()
     {
+        StopCoroutine(GameOverCountdown());
+
         for (int i = 0; i < 2; ++i)
         {
             PushPlayer();
@@ -318,18 +334,17 @@ public class Deck : MonoBehaviour
                                     GetComponent<CardModel>().ToggleFace(true);
 
     private void EndHand(WinCode code)
-    {
-        hitButton.interactable = false;
-        stickButton.interactable = false;
+    {   
         FlipDealerCard();
-
         switch (code)
         {
             case WinCode.DealerWins:
                 finalMessage.text = "You lose!";
+                _balance -= _bet;
                 break;
             case WinCode.PlayerWins:
                 finalMessage.text = "You win!";
+                _balance += 2 * _bet; 
                 break;
             case WinCode.Draw:
                 finalMessage.text = "Draw!";
@@ -338,17 +353,59 @@ public class Deck : MonoBehaviour
                 Debug.Assert(false);    // Report invalid input
                 break;
         }
+
+        hitButton.interactable = false;
+        stickButton.interactable = false;
+        raiseBetButton.interactable = false;
+        lowerBetButton.interactable = false;
+
+        _bet = 0;
+        bet.text = "Bet: 0 $";
+        balance.text = "Balance: " + _balance + " $";
+
+        if (_balance == 0) 
+        {
+            finalMessage.text += "\n - GAME OVER -";
+            StartCoroutine(GameOverCountdown());
+        }
     }
 
     public void PlayAgain()
     {
         hitButton.interactable = true;
         stickButton.interactable = true;
+        raiseBetButton.interactable = true;
+        lowerBetButton.interactable = true;
         finalMessage.text = "";
+
         player.GetComponent<CardHand>().Clear();
         dealer.GetComponent<CardHand>().Clear();          
         cardIndex = 0;
         ShuffleCards();
         StartGame();
+    }
+
+    public void RaiseBet()
+    {
+        if (_bet < _balance)
+        {
+            _bet += Constants.BetIncrement;
+            bet.text = "Bet: " + _bet.ToString() + " $";
+            playAgainButton.interactable = true;
+        }
+    }
+    
+    public void LowerBet()
+    {
+        if (_bet > 0)
+        {
+            _bet -= Constants.BetIncrement;
+            bet.text = "Bet: " + _bet.ToString() + " $";
+        }
+    }
+    IEnumerator GameOverCountdown()
+    {   
+        yield return new WaitForSeconds(5);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }
