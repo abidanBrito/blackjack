@@ -13,11 +13,20 @@ internal static class Constants
     public const int Blackjack = 21;
     public const int DealerStand = 17;
     public const int SoftAce = 11;
+    public const int InitialCardsDealt = 2;
+    public const int ProbPrecision = 2;
     public const uint InitialBalance = 1000;
     public const uint BetIncrement = 10;
+    public const uint BetWinMultiplier = 2;
+    public const uint NewGameCountdown = 5;
 }
 
-internal enum WinCode { DealerWins, PlayerWins, Draw }
+internal enum WinCode 
+{ 
+    DealerWins, 
+    PlayerWins, 
+    Draw 
+}
 
 public class Deck : MonoBehaviour
 {
@@ -31,7 +40,6 @@ public class Deck : MonoBehaviour
     public Text finalMessage;
     public Text probMessage;
 
-
     // Bet
     public Button raiseBetButton;
     public Button lowerBetButton;
@@ -43,10 +51,8 @@ public class Deck : MonoBehaviour
     public int[] values = new int[Constants.DeckCards];
     int cardIndex = 0;  
        
-    private void Awake()
-    {    
+    private void Awake() => 
         InitCardValues();
-    }
 
     private void Start()
     {
@@ -134,9 +140,9 @@ public class Deck : MonoBehaviour
 
     private void StartGame()
     {
-        StopCoroutine(GameOverCountdown());
+        StopCoroutine(NewGame());
 
-        for (int i = 0; i < 2; ++i)
+        for (int i = 0; i < Constants.InitialCardsDealt; ++i)
         {
             PushPlayer();
             PushDealer();
@@ -173,9 +179,11 @@ public class Deck : MonoBehaviour
         return false;
     }
 
-    private int GetPlayerPoints() => player.GetComponent<CardHand>().points;
+    private int GetPlayerPoints() => 
+        player.GetComponent<CardHand>().points;
 
-    private int GetDealerPoints() => dealer.GetComponent<CardHand>().points;
+    private int GetDealerPoints() => 
+        dealer.GetComponent<CardHand>().points;
 
     private void CalculateProbabilities()
     {
@@ -238,7 +246,7 @@ public class Deck : MonoBehaviour
             }
         }
 
-        return System.Math.Round((favorableCases / possibleCases) * 100, 2);
+        return System.Math.Round((favorableCases / possibleCases) * 100, Constants.ProbPrecision);
     }
 
     // Probability that the player gets 17 - 21 points if he/she asks for a card
@@ -267,7 +275,7 @@ public class Deck : MonoBehaviour
             }
         }
     
-        return System.Math.Round((favorableCases / possibleCases) * 100, 2);
+        return System.Math.Round((favorableCases / possibleCases) * 100, Constants.ProbPrecision);
     }
 
     // Probability that the player goes over 21 points if he/she asks for a card
@@ -284,7 +292,7 @@ public class Deck : MonoBehaviour
             if (sum > Constants.Blackjack) { favorableCases++; }
         }
 
-        return System.Math.Round((favorableCases / possibleCases) * 100, 2);
+        return System.Math.Round((favorableCases / possibleCases) * 100, Constants.ProbPrecision);
     }
 
     private void PushDealer()
@@ -330,8 +338,8 @@ public class Deck : MonoBehaviour
         else { EndHand(WinCode.Draw); }
     }
 
-    public void FlipDealerCard() => dealer.GetComponent<CardHand>().cards[0].
-                                    GetComponent<CardModel>().ToggleFace(true);
+    public void FlipDealerCard() => 
+        dealer.GetComponent<CardHand>().FlipFirstCard();
 
     private void EndHand(WinCode code)
     {   
@@ -344,7 +352,7 @@ public class Deck : MonoBehaviour
                 break;
             case WinCode.PlayerWins:
                 finalMessage.text = "You win!";
-                _balance += 2 * _bet; 
+                _balance += Constants.BetWinMultiplier * _bet; 
                 break;
             case WinCode.Draw:
                 finalMessage.text = "Draw!";
@@ -354,33 +362,38 @@ public class Deck : MonoBehaviour
                 break;
         }
 
+        // Disable buttons
         hitButton.interactable = false;
         stickButton.interactable = false;
         raiseBetButton.interactable = false;
         lowerBetButton.interactable = false;
 
+        // Update bet and balance
         _bet = 0;
         bet.text = "Bet: 0 $";
         balance.text = "Balance: " + _balance + " $";
 
-        if (_balance == 0) 
+        if (_balance == 0)
         {
             finalMessage.text += "\n - GAME OVER -";
-            StartCoroutine(GameOverCountdown());
+            StartCoroutine(NewGame());
         }
     }
 
     public void PlayAgain()
-    {
+    {   
+        // Reset GUI
         hitButton.interactable = true;
         stickButton.interactable = true;
         raiseBetButton.interactable = true;
         lowerBetButton.interactable = true;
         finalMessage.text = "";
 
+        // Clear hand
         player.GetComponent<CardHand>().Clear();
         dealer.GetComponent<CardHand>().Clear();          
         cardIndex = 0;
+        
         ShuffleCards();
         StartGame();
     }
@@ -403,9 +416,10 @@ public class Deck : MonoBehaviour
             bet.text = "Bet: " + _bet.ToString() + " $";
         }
     }
-    IEnumerator GameOverCountdown()
+
+    IEnumerator NewGame()
     {   
-        yield return new WaitForSeconds(5);
+        yield return new WaitForSeconds(Constants.NewGameCountdown);
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

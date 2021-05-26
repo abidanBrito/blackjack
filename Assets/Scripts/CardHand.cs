@@ -7,80 +7,64 @@ public class CardHand : MonoBehaviour
     public GameObject card;
     public bool isDealer = false;
     public int points;
-    private int coordY;    
+    private int coordY;
      
-    private void Awake()
-    {
-        points = 0;
-        //Definimos dónde posicionamos las cartas de cada uno
-        if (!isDealer)
-            coordY = 3;
-        else
-            coordY = -1;
-    }
+    private void Awake() => 
+        DefaultState();
 
     public void Clear()
     {
-        points = 0;
-        if (!isDealer)
-            coordY = 3;
-        else
-            coordY = -1;
-        foreach (GameObject g in cards)
-        {
-            Destroy(g);
-        }
-        cards.Clear();                        
-    }        
-
-    public void InitialToggle()
-    {
-        cards[0].GetComponent<CardModel>().ToggleFace(true);              
+        DefaultState();
+    
+        foreach (GameObject c in cards) { Destroy(c); }
+        cards.Clear();
     }
 
+    private void DefaultState()
+    {
+        points = 0;
+
+        // Card placement for both the player and the dealer
+        coordY = isDealer ? -1 : 3;
+    }
+
+    public void FlipFirstCard() => 
+        cards[0].GetComponent<CardModel>().ToggleFace(true);
+    
     public void Push(Sprite front, int value)
     {
-        //Creamos una carta y la añadimos a nuestra mano
-        GameObject cardCopy = (GameObject)Instantiate(card);
+        // Create a new card and add it to the current hand
+        GameObject cardCopy = (GameObject) Instantiate(card);
         cards.Add(cardCopy);
 
-        //La posicionamos en el tablero 
-        float coordX = (float)1.4 * (float)(cards.Count - 4);
-        Vector3 pos = new Vector3(coordX, coordY);               
-        cardCopy.transform.position = pos;
+        // Position it on the table
+        float coordX = 1.4f * (float) (cards.Count - 4);
+        cardCopy.transform.position = new Vector3(coordX, coordY);
 
-        //Le ponemos la imagen y el valor asignado
-        cardCopy.GetComponent<CardModel>().front = front;
+        // Assign it the right cover and value
+        cardCopy.GetComponent<CardModel>().cardFront = front;
         cardCopy.GetComponent<CardModel>().value = value;
         
-        //La cubrimos si es la primera del dealer
-        if (isDealer && cards.Count <= 1)
-            cardCopy.GetComponent<CardModel>().ToggleFace(false);
-        else
-            cardCopy.GetComponent<CardModel>().ToggleFace(true);
-
-        //Calculamos la puntuación de nuestra mano
+        // Cover up the dealer's first card
+        bool isCovered = (isDealer && cards.Count <= 1) ? false : true;
+        cardCopy.GetComponent<CardModel>().ToggleFace(isCovered);
+        
+        // Compute the hand points
         int val = 0;
         int aces = 0;
-        foreach (GameObject f in cards)
+        foreach (GameObject c in cards)
         {            
-
-            if (f.GetComponent<CardModel>().value != 11)
-                val += f.GetComponent<CardModel>().value;
-            else
-                aces++;
+            if (c.GetComponent<CardModel>().value != 11) 
+            {
+                val += c.GetComponent<CardModel>().value;
+            }
+            else { aces++; }
         }
 
-        for (int i = 0; i < aces; i++)
+        // Consider soft aces situations
+        for (int i = 0; i < aces; ++i)
         {
-            if (val + 11 <= 21)
-            {
-                val = val + 11;
-            }
-            else
-            {
-                val = val + 1;
-            }
+            val += (val + 11 <= 21) ? 11 : 1;
         }
 
         points = val;
