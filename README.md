@@ -8,7 +8,7 @@ A single-player **blackjack** game implementation with **probabilities** and a s
 *   \[x] **Blackjack**.
 *   \[x] **Push** (draw).
 *   \[x] **Soft hand** (an ace can be counted as one or eleven).
-*   \[x] Raise / lower **bet** (in multiples of 10$).
+*   \[x] Raise / lower **bet** (in multiples of 10 $).
 *   \[x] **Probability** that the **dealer has a higher point count than the player**, having the first card hidden.
 *   \[x] **Probability** that the **player gets 17 - 21 points** if he / she asks for a card.
 *   \[x] **Probability** that the **player goes over 21 points** if he / she asks for a card.
