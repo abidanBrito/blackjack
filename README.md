@@ -15,4 +15,4 @@ A single-player **blackjack** game implementation with **probabilities** and a s
 *   \[x] **Probability** that the **player goes over 21 points** if he / she asks for a card.
 
 ## LICENSE
-This repository is released under the MIT license. See [LICENSE](LICENSE) for more information.
+This repository is released under the MIT license. See [LICENSE.md](LICENSE.md) for more information.
