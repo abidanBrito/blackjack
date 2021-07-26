@@ -1,4 +1,4 @@
-# blackjack
+[![MIT license](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
 
 A single-player **blackjack** game implementation with **probabilities** and a simple **betting system**, built within the Unity game engine.
 
